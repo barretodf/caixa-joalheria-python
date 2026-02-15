@@ -43,24 +43,42 @@ def main():
         print(f"{codigo} - {dados['descricao']} (R$ {dados['preco']:.2f})")
 
     # ------------------
-    # HISTÓRIA 2 (#3): BUSCAR PRODUTO PELO CÓDIGO
+    # AJUSTE: DIGITAR CÓDIGO E MOSTRAR PRODUTO
     # ------------------
-    # Solicita ao usuário um código de produto
-    codigo = input("\nDigite o código do produto que deseja buscar: ")
+    venda = []  # lista para armazenar os itens escolhidos
 
-    # Valida se a entrada é numérica
-    if not codigo.isdigit():
-        print("Código inválido, digite apenas números.")
-        return
+    while True:
+        codigo = input("\nDigite o código do produto (ou '0' para finalizar): ")
 
-    codigo = int(codigo)
+        # Valida se é numérico
+        if not codigo.isdigit():
+            print("Código inválido, digite apenas números.")
+            continue
 
-    # Verifica se o produto existe no dicionário
-    if codigo in produtos:
-        produto = produtos[codigo]
-        print(f"Produto encontrado: {produto['descricao']} - Preço: R$ {produto['preco']:.2f}")
-    else:
-        print("Produto não encontrado.")
+        codigo = int(codigo)
+
+        # Permite sair digitando 0
+        if codigo == 0:
+            break
+
+        # Verifica se produto existe
+        if codigo in produtos:
+            produto = produtos[codigo]
+            venda.append(produto)  # adiciona à lista
+            print(f"Produto: {produto['descricao']} - Preço: R$ {produto['preco']:.2f}")
+        else:
+            print("Produto não encontrado.")
+
+    # ------------------
+    # SOMA FINAL
+    # ------------------
+    print("\nResumo da venda:")
+    total = 0
+    for item in venda:
+        print(f"- {item['descricao']} (R$ {item['preco']:.2f})")
+        total += item['preco']
+
+    print(f"Total da venda: R$ {total:.2f}")
 
 
 if __name__ == "__main__":
