@@ -35,9 +35,32 @@ def main():
         print("Erro ao carregar produtos.")
         return
 
+    # ------------------
+    # LISTAR PRODUTOS
+    # ------------------
     print("\nProdutos disponíveis:")
     for codigo, dados in produtos.items():
         print(f"{codigo} - {dados['descricao']} (R$ {dados['preco']:.2f})")
+
+    # ------------------
+    # HISTÓRIA 2 (#3): BUSCAR PRODUTO PELO CÓDIGO
+    # ------------------
+    # Solicita ao usuário um código de produto
+    codigo = input("\nDigite o código do produto que deseja buscar: ")
+
+    # Valida se a entrada é numérica
+    if not codigo.isdigit():
+        print("Código inválido, digite apenas números.")
+        return
+
+    codigo = int(codigo)
+
+    # Verifica se o produto existe no dicionário
+    if codigo in produtos:
+        produto = produtos[codigo]
+        print(f"Produto encontrado: {produto['descricao']} - Preço: R$ {produto['preco']:.2f}")
+    else:
+        print("Produto não encontrado.")
 
 
 if __name__ == "__main__":
