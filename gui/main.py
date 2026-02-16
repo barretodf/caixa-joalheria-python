@@ -1,6 +1,8 @@
 import tkinter as tk
 import csv
 from datetime import datetime
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 
 ARQUIVO_PRODUTOS = "produtos.csv"
 
@@ -26,45 +28,61 @@ def salvar_produto(caminho_arquivo, descricao, preco):
         writer = csv.writer(arquivo)
         writer.writerow([novo_codigo, descricao, preco])
 
+def gerar_recibo(venda, cpf, forma_pagamento, data_hora):
+    c = canvas.Canvas("recibo.pdf", pagesize=A4)
+    largura, altura = A4
+
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(200, altura - 50, "Recibo de Venda - Joalheria")
+
+    c.setFont("Helvetica", 12)
+    c.drawString(50, altura - 100, f"Data/Hora: {data_hora}")
+    c.drawString(50, altura - 120, f"CPF do cliente: {cpf}")
+    c.drawString(50, altura - 140, f"Forma de pagamento: {forma_pagamento}")
+
+    c.drawString(50, altura - 180, "Produtos:")
+
+    y = altura - 200
+    total = 0
+    for item in venda:
+        c.drawString(60, y, f"- {item['descricao']} (R$ {item['preco']:.2f})")
+        total += item['preco']
+        y -= 20
+
+    c.drawString(50, y - 20, f"Total: R$ {total:.2f}")
+
+    c.save()
+
 def main():
-    # Criar janela principal
     janela = tk.Tk()
     janela.title("Sistema de Caixa - Joalheria")
-    janela.geometry("600x500")
+    janela.geometry("600x600")
 
-    # Lista de venda (armazenar produtos adicionados)
     venda = []
+    forma_pagamento = None
 
-    # Mostrar data/hora da venda
     data_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     label_data = tk.Label(janela, text=f"Data/Hora da venda: {data_hora}")
     label_data.pack(pady=5)
 
-    # Campo CPF
     tk.Label(janela, text="CPF do cliente:").pack(pady=5)
     entry_cpf = tk.Entry(janela)
     entry_cpf.pack(pady=5)
 
-    # Label de instrução
     label_codigo = tk.Label(janela, text="Digite o código do produto:")
     label_codigo.pack(pady=5)
 
-    # Campo de entrada
     entry_codigo = tk.Entry(janela)
     entry_codigo.pack(pady=5)
 
-    # Área de resumo (produtos e total)
     resumo = tk.Text(janela, height=12, width=60)
     resumo.pack(pady=10)
 
-    # Função para adicionar produto
     def adicionar_produto():
         codigo = entry_codigo.get()
-
         if not codigo.isdigit():
-            resumo.insert(tk.END, "Código inválido, digite apenas números.\n")
+            resumo.insert(tk.END, "Código inválido.\n")
             return
-
         produtos = carregar_produtos(ARQUIVO_PRODUTOS)
         codigo_int = int(codigo)
         if codigo_int in produtos:
@@ -74,7 +92,6 @@ def main():
         else:
             resumo.insert(tk.END, f"Produto código {codigo} não encontrado.\n")
 
-    # Função para finalizar venda
     def finalizar_venda():
         resumo.insert(tk.END, "\nResumo da venda:\n")
         total = 0
@@ -83,19 +100,12 @@ def main():
             total += item['preco']
         resumo.insert(tk.END, f"Total: R$ {total:.2f}\n")
 
-    # Botão "Adicionar produto"
     btn_adicionar = tk.Button(janela, text="Adicionar produto", command=adicionar_produto)
     btn_adicionar.pack(pady=5)
 
-    # Botão "Finalizar venda"
     btn_finalizar = tk.Button(janela, text="Finalizar venda", command=finalizar_venda)
     btn_finalizar.pack(pady=5)
 
-    # ====================================
-    # O próximo código vai aqui
-    # ====================================
-
-    # Área para listar produtos disponíveis
     lista_produtos = tk.Text(janela, height=8, width=60)
     lista_produtos.pack(pady=10)
 
@@ -108,7 +118,6 @@ def main():
 
     atualizar_lista()
 
-    # Função para abrir janela de cadastro
     def abrir_cadastro():
         cadastro = tk.Toplevel(janela)
         cadastro.title("Cadastrar Produto")
@@ -133,19 +142,17 @@ def main():
 
         tk.Button(cadastro, text="Salvar", command=salvar).pack(pady=10)
 
-    # Botão principal para abrir cadastro
     btn_cadastrar = tk.Button(janela, text="Cadastrar produto", command=abrir_cadastro)
     btn_cadastrar.pack(pady=10)
 
-    # Função para validar CPF
     def validar_cpf(cpf):
         return cpf.isdigit() and len(cpf) == 11
 
-    # Função para abrir opções de pagamento
     def pagar():
+        nonlocal forma_pagamento
         cpf = entry_cpf.get()
         if not validar_cpf(cpf):
-            resumo.insert(tk.END, "CPF inválido. Digite 11 números.\n")
+            resumo.insert(tk.END, "CPF inválido.\n")
             return
 
         pagamento = tk.Toplevel(janela)
@@ -154,6 +161,8 @@ def main():
         tk.Label(pagamento, text="Escolha a forma de pagamento:").pack(pady=5)
 
         def confirmar(opcao):
+            nonlocal forma_pagamento
+            forma_pagamento = opcao
             resumo.insert(tk.END, f"Pagamento confirmado via {opcao}.\n")
             pagamento.destroy()
 
@@ -161,11 +170,23 @@ def main():
         tk.Button(pagamento, text="Cartão", command=lambda: confirmar("Cartão")).pack(pady=5)
         tk.Button(pagamento, text="Pix", command=lambda: confirmar("Pix")).pack(pady=5)
 
-    # Botão Pagar
     btn_pagar = tk.Button(janela, text="Pagar", command=pagar)
     btn_pagar.pack(pady=10)
 
-    # Manter janela ativa
+    def gerar_pdf():
+        cpf = entry_cpf.get()
+        if not validar_cpf(cpf):
+            resumo.insert(tk.END, "CPF inválido, não foi possível gerar recibo.\n")
+            return
+        if not forma_pagamento:
+            resumo.insert(tk.END, "Selecione forma de pagamento antes de gerar recibo.\n")
+            return
+        gerar_recibo(venda, cpf, forma_pagamento, data_hora)
+        resumo.insert(tk.END, "Recibo gerado em recibo.pdf\n")
+
+    btn_recibo = tk.Button(janela, text="Gerar Recibo PDF", command=gerar_pdf)
+    btn_recibo.pack(pady=10)
+
     janela.mainloop()
 
 if __name__ == "__main__":
