@@ -1,60 +1,78 @@
 import tkinter as tk
+import csv
+
+ARQUIVO_PRODUTOS = "produtos.csv"
+
+def carregar_produtos(caminho_arquivo):
+    produtos = {}
+    try:
+        with open(caminho_arquivo, "r", encoding="utf-8") as arquivo:
+            linhas = arquivo.readlines()
+            for linha in linhas[1:]:  # ignora cabeçalho
+                codigo, descricao, preco = linha.strip().split(",")
+                produtos[int(codigo)] = {
+                    "descricao": descricao,
+                    "preco": float(preco)
+                }
+    except FileNotFoundError:
+        print("Arquivo não encontrado.")
+    return produtos
+
+def salvar_produto(caminho_arquivo, descricao, preco):
+    produtos = carregar_produtos(caminho_arquivo)
+    novo_codigo = max(produtos.keys(), default=0) + 1
+    with open(caminho_arquivo, "a", encoding="utf-8", newline="") as arquivo:
+        writer = csv.writer(arquivo)
+        writer.writerow([novo_codigo, descricao, preco])
 
 def main():
-    # Criar janela principal
     janela = tk.Tk()
     janela.title("Sistema de Caixa - Joalheria")
     janela.geometry("600x400")
 
-    # Lista de venda (armazenar produtos adicionados)
-    venda = []
+    # Área para listar produtos disponíveis
+    lista_produtos = tk.Text(janela, height=10, width=50)
+    lista_produtos.pack(pady=10)
 
-    # Label de instrução
-    label_codigo = tk.Label(janela, text="Digite o código do produto:")
-    label_codigo.pack(pady=5)
+    def atualizar_lista():
+        lista_produtos.delete("1.0", tk.END)
+        produtos = carregar_produtos(ARQUIVO_PRODUTOS)
+        lista_produtos.insert(tk.END, "Produtos disponíveis:\n")
+        for codigo, dados in produtos.items():
+            lista_produtos.insert(tk.END, f"{codigo} - {dados['descricao']} (R$ {dados['preco']:.2f})\n")
 
-    # Campo de entrada
-    entry_codigo = tk.Entry(janela)
-    entry_codigo.pack(pady=5)
+    atualizar_lista()  # carregar ao iniciar
 
-    # Área de resumo (produtos e total)
-    resumo = tk.Text(janela, height=10, width=50)
-    resumo.pack(pady=10)
+    # Função para abrir janela de cadastro
+    def abrir_cadastro():
+        cadastro = tk.Toplevel(janela)
+        cadastro.title("Cadastrar Produto")
 
-    # Função para adicionar produto
-    def adicionar_produto():
-        codigo = entry_codigo.get()
+        tk.Label(cadastro, text="Descrição:").pack(pady=5)
+        entry_desc = tk.Entry(cadastro)
+        entry_desc.pack(pady=5)
 
-        # Validar se é número
-        if not codigo.isdigit():
-            resumo.insert(tk.END, "Código inválido, digite apenas números.\n")
-            return
+        tk.Label(cadastro, text="Preço:").pack(pady=5)
+        entry_preco = tk.Entry(cadastro)
+        entry_preco.pack(pady=5)
 
-        # Aqui futuramente vamos buscar no dicionário de produtos
-        # Por enquanto, simulação:
-        resumo.insert(tk.END, f"Produto código {codigo} adicionado.\n")
-        venda.append({"descricao": f"Produto {codigo}", "preco": 10.0})
+        def salvar():
+            descricao = entry_desc.get()
+            preco = entry_preco.get()
+            if descricao and preco.replace(".", "", 1).isdigit():
+                salvar_produto(ARQUIVO_PRODUTOS, descricao, float(preco))
+                tk.Label(cadastro, text="Produto salvo com sucesso!").pack(pady=5)
+                atualizar_lista()  # atualizar lista na tela principal
+            else:
+                tk.Label(cadastro, text="Dados inválidos.").pack(pady=5)
 
-    # Função para finalizar venda
-    def finalizar_venda():
-        resumo.insert(tk.END, "\nResumo da venda:\n")
-        total = 0
-        for item in venda:
-            resumo.insert(tk.END, f"- {item['descricao']} (R$ {item['preco']:.2f})\n")
-            total += item['preco']
-        resumo.insert(tk.END, f"Total: R$ {total:.2f}\n")
+        tk.Button(cadastro, text="Salvar", command=salvar).pack(pady=10)
 
-    # Botão "Adicionar produto"
-    btn_adicionar = tk.Button(janela, text="Adicionar produto", command=adicionar_produto)
-    btn_adicionar.pack(pady=5)
+    # Botão principal para abrir cadastro
+    btn_cadastrar = tk.Button(janela, text="Cadastrar produto", command=abrir_cadastro)
+    btn_cadastrar.pack(pady=10)
 
-    # Botão "Finalizar venda"
-    btn_finalizar = tk.Button(janela, text="Finalizar venda", command=finalizar_venda)
-    btn_finalizar.pack(pady=5)
-
-    # Manter janela ativa
     janela.mainloop()
 
 if __name__ == "__main__":
     main()
-
