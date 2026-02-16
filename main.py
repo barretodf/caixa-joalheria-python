@@ -43,28 +43,35 @@ def main():
         print(f"{codigo} - {dados['descricao']} (R$ {dados['preco']:.2f})")
 
     # ------------------
-    # AJUSTE: DIGITAR CÓDIGO E MOSTRAR PRODUTO
+    # HISTÓRIA 6 (#7): VALIDAÇÕES BÁSICAS
     # ------------------
     venda = []  # lista para armazenar os itens escolhidos
 
     while True:
         codigo = input("\nDigite o código do produto (ou '0' para finalizar): ")
 
-        # Valida se é numérico
+        # Impedir letras ou símbolos
         if not codigo.isdigit():
-            print("Código inválido, digite apenas números.")
+            print("Código inválido, digite apenas números positivos.")
             continue
 
         codigo = int(codigo)
 
-        # Permite sair digitando 0
+        # Finalizar venda (tratar primeiro)
         if codigo == 0:
+            if not venda:
+                print("Nenhum produto foi adicionado. Encerrando o sistema.")
             break
 
-        # Verifica se produto existe
+        # Impedir valores negativos
+        if codigo < 0:
+            print("Código inválido, não pode ser negativo.")
+            continue
+
+        # Verificar se produto existe
         if codigo in produtos:
             produto = produtos[codigo]
-            venda.append(produto)  # adiciona à lista
+            venda.append(produto)
             print(f"Produto: {produto['descricao']} - Preço: R$ {produto['preco']:.2f}")
         else:
             print("Produto não encontrado.")
