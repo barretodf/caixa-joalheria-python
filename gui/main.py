@@ -64,7 +64,7 @@ def main():
     data_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     label_data = tk.Label(janela, text=f"Data/Hora da venda: {data_hora}")
     label_data.pack(pady=5)
-
+#===================================================
     tk.Label(janela, text="CPF do cliente:").pack(pady=5)
     entry_cpf = tk.Entry(janela)
     entry_cpf.pack(pady=5)
@@ -75,8 +75,17 @@ def main():
     entry_codigo = tk.Entry(janela)
     entry_codigo.pack(pady=5)
 
+    # Vincular Enter ao campo de código
+    def adicionar_produto_evento(event):
+        adicionar_produto()              # chama a função já existente
+        entry_codigo.delete(0, tk.END)   # limpa automaticamente o campo
+
+    entry_codigo.bind("<Return>", adicionar_produto_evento)
+
     resumo = tk.Text(janela, height=12, width=60)
     resumo.pack(pady=10)
+
+#===================================================
 
     def adicionar_produto():
         codigo = entry_codigo.get()
