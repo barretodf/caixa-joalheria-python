@@ -62,12 +62,12 @@ def gerar_recibo(venda, cpf, forma_pagamento, data_hora):
     return nome_arquivo
 
 #===================================================
-#===================================================
 # Função de consulta de produtos
 def abrir_consulta():
+    global venda, resumo, atualizar_total
     consulta = tk.Toplevel()
     consulta.title("Consultar Produtos")
-    consulta.geometry("500x400")  # tamanho inicial da janela
+    consulta.geometry("500x400")
 
     tk.Label(consulta, text="Digite código ou nome:").pack(pady=5)
     entry_busca = tk.Entry(consulta, width=40)
@@ -101,19 +101,70 @@ def abrir_consulta():
         produtos = carregar_produtos(ARQUIVO_PRODUTOS)
         if codigo.isdigit() and int(codigo) in produtos:
             produto = produtos[int(codigo)]
-            # >>> Agora envia para a tela principal <<<
             venda.append(produto)
             resumo.insert(tk.END, f"- {produto['descricao']} (R$ {produto['preco']:.2f})\n")
             atualizar_total()
-            # Popup automático
             popup = tk.Toplevel(consulta)
             popup.title("Info")
             tk.Label(popup, text="Produto enviado para a venda!").pack(padx=20, pady=20)
             popup.after(2000, popup.destroy)
+#==================================================
+    def editar_selecionado():
+        selecionado = resultado.get(tk.ACTIVE)
+        if not selecionado or "Nenhum produto" in selecionado:
+            messagebox.showerror("Erro", "Selecione um produto para editar.")
+            return
 
-    tk.Button(consulta, text="Pesquisar", command=pesquisar).pack(pady=5)
+        codigo = selecionado.split(" - ")[0].strip()
+        produtos = carregar_produtos(ARQUIVO_PRODUTOS)
+        if not codigo.isdigit() or int(codigo) not in produtos:
+            messagebox.showerror("Erro", "Produto inválido.")
+            return
+
+        produto = produtos[int(codigo)]
+        editar = tk.Toplevel(consulta)
+        editar.title("Editar Produto")
+
+        tk.Label(editar, text="Descrição:").pack()
+        entry_desc = tk.Entry(editar)
+        entry_desc.insert(0, produto["descricao"])
+        entry_desc.pack()
+
+        tk.Label(editar, text="Preço:").pack()
+        entry_preco = tk.Entry(editar)
+        entry_preco.insert(0, produto["preco"])
+        entry_preco.pack()
+
+        def salvar_edicao():
+            produtos[int(codigo)]["descricao"] = entry_desc.get()
+            try:
+                produtos[int(codigo)]["preco"] = float(entry_preco.get())
+            except ValueError:
+                messagebox.showerror("Erro", "Preço inválido.")
+                return
+
+            # Regrava o CSV inteiro
+            with open(ARQUIVO_PRODUTOS, "w", encoding="utf-8", newline="") as arquivo:
+                writer = csv.writer(arquivo)
+                writer.writerow(["codigo", "descricao", "preco"])
+                for cod, dados in produtos.items():
+                    writer.writerow([cod, dados["descricao"], dados["preco"]])
+
+            messagebox.showinfo("Sucesso", "Produto atualizado com sucesso!")
+            editar.destroy()
+            mostrar_todos()
+
+        tk.Button(editar, text="Salvar", command=salvar_edicao).pack(pady=10)
+
+    #==============================
+    # Frame para os botões (lado a lado)
+    frame_botoes = tk.Frame(consulta)
+    frame_botoes.pack(pady=10)
+
+    tk.Button(frame_botoes, text="Pesquisar", command=pesquisar, width=12).pack(side="left", padx=5)
     entry_busca.bind("<Return>", lambda event: pesquisar())
-    tk.Button(consulta, text="Adicionar", command=adicionar_selecionado).pack(pady=5)
+    tk.Button(frame_botoes, text="Adicionar", command=adicionar_selecionado, width=12).pack(side="left", padx=5)
+    tk.Button(frame_botoes, text="Editar", command=editar_selecionado, width=12).pack(side="left", padx=5)
 
     mostrar_todos()
 
@@ -206,6 +257,8 @@ def abrir_cadastro():
 #===================================================
 # Função principal
 def main():
+    global venda, resumo, atualizar_total 
+    venda = []
     janela = tk.Tk()
     janela.title("Sistema de Caixa - Joalheria")
     janela.geometry("1000x600")
