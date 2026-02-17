@@ -52,3 +52,8 @@ Total da venda: R$ 1550.00
 git clone <url-do-repo>
 cd caixa-joalheria-python
 python main.py
+
+
+
+git checkout gui-version
+python gui/main.py
